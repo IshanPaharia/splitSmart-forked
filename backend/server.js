@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes.js"
 import cookieParser from "cookie-parser";
 import errorHandler from "./middleware/error.middleware.js";
 import groupRoutes from "./routes/group.routes.js"
+import expenseRoutes from "./routes/expense.routes.js"
 
 dotenv.config();
 connectDB();
@@ -23,6 +24,7 @@ app.use(morgan("dev"));
 
 app.use("/api/auth", authRoutes)
 app.use("/api/group", groupRoutes)
+app.use("/api/expense", expenseRoutes)
 
 
 app.get("/", (req, res) => {

@@ -146,10 +146,10 @@ export const guestLogin = asyncHandler(async (req, res) => {
     const uniqueSuffix = crypto.randomBytes(4).toString("hex")
     const username = `guest_${uniqueSuffix}`
 
-    const user = await User.create*{
+    const user = await User.create({
         username,
         isGuest: true,
-    }
+    })
 
     const accessToken = generateAccessToken(user._id)
     const refreshToken = generateRefreshToken(user._id)

@@ -16,7 +16,7 @@ router.post("/join/:token", joinGroup)
 // Only admin can use these routes
 router.put("/:id", requireAdmin, updateGroup)
 router.delete("/:id", requireAdmin, deleteGroup)
-router.post("/:id/:invite", requireAdmin, genrateInvite)
+router.post("/:id/invite", requireAdmin, genrateInvite)
 router.delete("/:id/members/:userId", requireAdmin, removeMember)
 
 export default router;

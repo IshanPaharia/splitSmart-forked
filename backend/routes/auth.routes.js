@@ -10,6 +10,7 @@ router.post("/guest", guestLogin)
 
 router.post("/logout", protect, logoutUser)
 router.get("/me", protect, getMe)
+router.post("/upgrade", protect, guestLogin)
 router.post('/refresh', refreshToken)
 
 export default router;
