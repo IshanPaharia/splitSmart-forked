@@ -2,6 +2,8 @@ import Group from "../models/group.model.js";
 import crypto from "crypto";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
+import Expense from "../models/expense.model.js";
+import { simplifyDebts } from "../utils/debtSimplification.js";
 
 // Create a group
 export const createGroup = asyncHandler(async (req, res) => {
@@ -43,7 +45,7 @@ export const getGroups = asyncHandler(async (req, res) => {
 export const getGroupById = asyncHandler(async (req, res) => {
   const group = await Group.findById(req.params.id).populate(
     "members.user",
-    "username email avatar"
+    "username email avatar",
   );
 
   if (!group) {
@@ -51,87 +53,141 @@ export const getGroupById = asyncHandler(async (req, res) => {
   }
 
   const isMember = group.members.some(
-    (m) => m.user._id.toString() === req.user._id.toString() // this piece of code checks if the requesting user really is a member of the group they gave group ID for. 
+    (m) => m.user._id.toString() === req.user._id.toString(), // this piece of code checks if the requesting user really is a member of the group they gave group ID for.
   );
 
   if (!isMember) {
-    throw new ApiError(403, "Not authorized — you are not a member of this group");
+    throw new ApiError(
+      403,
+      "Not authorized — you are not a member of this group",
+    );
   }
 
   res.json(group);
 });
 
 export const joinGroup = asyncHandler(async (req, res) => {
-  const {token} = req.params
+  const { token } = req.params;
 
   const group = await Group.findOne({
     inviteToken: token,
-    inviteTokenExpiry: {$gt: new Date()}
-  })
+    inviteTokenExpiry: { $gt: new Date() },
+  });
 
-  if(!group){
-    throw new ApiError(400, "Invalid or expired invite token")
+  if (!group) {
+    throw new ApiError(400, "Invalid or expired invite token");
   }
 
   const alreadyMember = group.members.some(
-    m => m.user.toString() === req.user._id.toString()
-  )
+    (m) => m.user.toString() === req.user._id.toString(),
+  );
 
-  if(!alreadyMember){
+  if (!alreadyMember) {
     group.members.push({
-      user: req.user._id // role defaults to member
-    })
+      user: req.user._id, // role defaults to member
+    });
 
-    await group.save()
+    await group.save();
   }
 
-  res.json(group)
+  res.json(group);
 });
 
 export const genrateInvite = asyncHandler(async (req, res) => {
-  const inviteToken = crypto.randomBytes(32).toString('hex')
-  req.group.inviteToken = inviteToken
-  req.group.inviteTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const inviteToken = crypto.randomBytes(32).toString("hex");
+  req.group.inviteToken = inviteToken;
+  req.group.inviteTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  await req.group.save()
+  await req.group.save();
 
   res.json({
-    inviteLink: `${process.env.CLIENT_URL}/join/${inviteToken}`
-  })
-})
+    inviteLink: `${process.env.CLIENT_URL}/join/${inviteToken}`,
+  });
+});
 
 export const updateGroup = asyncHandler(async (req, res) => {
-  const {name, description} = req.body
+  const { name, description } = req.body;
 
   // These two if can directly access group.field because in routes the requireAdmin middleware attaches the group to req body
-  if(name) req.group.name = name
-  if(description !== undefined) req.group.description = description
+  if (name) req.group.name = name;
+  if (description !== undefined) req.group.description = description;
 
-  await req.group.save()
+  await req.group.save();
 
-  res.json(req.group)
-})
+  res.json(req.group);
+});
 
 export const deleteGroup = asyncHandler(async (req, res) => {
-  await req.group.deleteOne()
-  res.json({messge: "Group deleted successfully."})
-})
+  await req.group.deleteOne();
+  res.json({ messge: "Group deleted successfully." });
+});
 
 export const removeMember = asyncHandler(async (req, res) => {
-  const {userId} = req.params
+  const { userId } = req.params;
 
-  if(userId === req.user._id.toString()){
-    throw new ApiError(400, "You cannot remove yourself from the group. If you'd like to delete group then head to delete group option")
+  if (userId === req.user._id.toString()) {
+    throw new ApiError(
+      400,
+      "You cannot remove yourself from the group. If you'd like to delete group then head to delete group option",
+    );
   }
 
-  const memberIndex = req.group.members.findIndex(m => m.user.toString() === userId)
+  const memberIndex = req.group.members.findIndex(
+    (m) => m.user.toString() === userId,
+  );
 
-  if(memberIndex === -1){
-    throw new ApiError(404, "User is not a member of this group")
+  if (memberIndex === -1) {
+    throw new ApiError(404, "User is not a member of this group");
   }
 
-  req.group.members.splice(memberIndex, 1)
-  await req.group.save()
+  req.group.members.splice(memberIndex, 1);
+  await req.group.save();
 
-  res.json({message: "Member removed successfully"})
-})
+  res.json({ message: "Member removed successfully" });
+});
+
+export const getSettlement = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const group = await Group.findById(id).populate(
+    "members.user",
+    "username avatar",
+  );
+
+  if (!group) {
+    throw new ApiError(404, "Group not found");
+  }
+
+  const isMember = group.members.some(
+    (m) => m.user._id.toString() === req.user._id.toString(),
+  );
+  if (!isMember) {
+    throw new ApiError(403, "You are not a member of this group");
+  }
+
+  const expenses = await Expense.find({
+    group: id,
+    approvalStatus: "approved",
+  });
+  // Run the debt simplification algorithm
+  const transactions = simplifyDebts(expenses);
+
+  const memberMap = {};
+  group.members.forEach((m) => {
+    memberMap[m.user._id.toString()] = m.user;
+  });
+
+  // Enrich transactions with user details for the frontend
+  const enrichedTransactions = transactions.map((t) => ({
+    from: memberMap[t.from] || t.from, // fallback to raw ID if user left group
+    to: memberMap[t.to] || t.to,
+    amount: t.amount,
+  }));
+
+  const totalGroupSpendings = expenses.reduce((sum, s) => sum + s.totalAmount, 0)
+
+  res.json({
+    groupId: id,
+    totalGroupSpendings: Math.round(totalGroupSpendings * 100) / 100,
+    transactions: enrichedTransactions
+  })
+});

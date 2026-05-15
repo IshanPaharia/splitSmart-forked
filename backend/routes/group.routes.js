@@ -1,6 +1,6 @@
 import express from 'express'
 import { protect, requireAdmin, requireRegistered } from '../middleware/auth.middleware.js'
-import { createGroup, getGroupById, getGroups, joinGroup, updateGroup, genrateInvite, deleteGroup, removeMember } from '../controllers/group.controller.js'
+import { createGroup, getGroupById, getGroups, joinGroup, updateGroup, genrateInvite, deleteGroup, removeMember, getSettlement } from '../controllers/group.controller.js'
 
 const router = express.Router()
 
@@ -12,6 +12,7 @@ router.post("/", requireRegistered, createGroup)
 router.get("/", getGroups)
 router.get("/:id", getGroupById)
 router.post("/join/:token", joinGroup)
+router.get("/:id/settlement", getSettlement)
 
 // Only admin can use these routes
 router.put("/:id", requireAdmin, updateGroup)
