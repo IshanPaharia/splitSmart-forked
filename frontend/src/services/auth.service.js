@@ -7,8 +7,8 @@ export const authService = {
   register: (username, email, password) =>
     api.post('/api/auth/register', { username, email, password }),
 
-  loginAsGuest: (displayName) =>
-    api.post('/api/auth/guest', { displayName }),
+  loginAsGuest: (displayName, guestId) =>
+    api.post('/api/auth/guest', { displayName, guestId }),
 
   logout: () =>
     api.post('/api/auth/logout'),

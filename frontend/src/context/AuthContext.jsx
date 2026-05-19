@@ -25,8 +25,10 @@ export function AuthProvider({ children }) {
   }
 
   const loginAsGuest = async (displayName) => {
-    const res = await authService.loginAsGuest(displayName)
+    const guestId = localStorage.getItem('splitsmart_guest_id')
+    const res = await authService.loginAsGuest(displayName, guestId)
     setUser(res.data)
+    localStorage.setItem('splitsmart_guest_id', res.data._id)
   }
 
   const logout = async () => {

@@ -136,20 +136,28 @@ export const refreshToken = asyncHandler(async (req, res) => {
 })
 
 export const guestLogin = asyncHandler(async (req, res) => {
-    const {displayName} = req.body
+    const {displayName, guestId} = req.body
     
     if(!displayName || displayName.trim().length < 2){
         throw new ApiError(400, "Display name is required (at least 2 characters long")
     }
 
-    // generate unique username for guest like guest_a3fd4gh to avoid collsions with real usernames
-    const uniqueSuffix = crypto.randomBytes(4).toString("hex")
-    const username = `guest_${uniqueSuffix}`
+    let user;
 
-    const user = await User.create({
-        username,
-        isGuest: true,
-    })
+    if (guestId && guestId.match(/^[0-9a-fA-F]{24}$/)) {
+        user = await User.findById(guestId)
+    }
+
+    if (!user || !user.isGuest) {
+        // generate unique username for guest like guest_a3fd4gh to avoid collsions with real usernames
+        const uniqueSuffix = crypto.randomBytes(4).toString("hex")
+        const username = `guest_${uniqueSuffix}`
+
+        user = await User.create({
+            username,
+            isGuest: true,
+        })
+    }
 
     const accessToken = generateAccessToken(user._id)
     const refreshToken = generateRefreshToken(user._id)
