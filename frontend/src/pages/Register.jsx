@@ -32,19 +32,19 @@ export default function Register() {
 
   return (
     <AuthLayout>
-      <GlassCard className="max-w-sm w-full p-8 flex flex-col items-center">
-        <div className="w-12 h-12 rounded-full bg-white/[0.06] border border-white/[0.10] flex items-center justify-center mb-6">
-          <UserPlus className="text-accent" size={20} />
+      <GlassCard className="max-w-sm w-full p-8 flex flex-col items-start">
+        <div className="w-12 h-12 rounded-full bg-white/[0.06] border border-white/[0.10] flex items-center justify-center mb-4">
+          <UserPlus className="text-white" size={20} />
         </div>
 
-        <h1 className="font-display text-2xl font-bold tracking-tight text-white mb-2 text-center">
+        <h1 className="font-display text-xl font-bold tracking-tight text-white mb-1 text-left">
           Create account
         </h1>
-        <p className="text-white/50 text-sm mb-8 text-center">
+        <p className="text-white/50 text-sm mb-5 text-left">
           Join SplitSmart today
         </p>
 
-        <form onSubmit={handleSubmit} className="w-full space-y-4">
+        <form onSubmit={handleSubmit} className="w-full space-y-3">
           <GlassInput
             type="text"
             placeholder="Username"
@@ -72,9 +72,9 @@ export default function Register() {
             minLength={8}
           />
           
-          {error && <p className="text-danger text-xs text-center pt-1">{error}</p>}
+          {error && <p className="text-danger text-xs text-left">{error}</p>}
           
-          <div className="pt-2">
+          <div className="pt-1">
             <GlassButton type="submit" disabled={loading}>
               {loading ? 'Creating account...' : 'Create account'}
             </GlassButton>
@@ -84,7 +84,7 @@ export default function Register() {
           </p>
         </form>
 
-        <p className="text-white/40 text-sm mt-8 text-center">
+        <p className="text-white/40 text-sm mt-5 text-center w-full">
           Already have an account?{' '}
           <Link to={ROUTES.LOGIN} className="text-white hover:text-accent transition-colors">
             Sign in

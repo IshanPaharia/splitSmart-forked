@@ -37,19 +37,15 @@ export default function Landing() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-16 relative">
-      <Link to={ROUTES.LOGIN} className="absolute top-6 right-6 text-sm text-white/50 hover:text-white transition-colors">
-        Sign in
-      </Link>
-
-      <GlassCard className="max-w-sm w-full p-8 flex flex-col items-center">
-        <div className="w-12 h-12 rounded-full bg-white/[0.06] border border-white/[0.10] flex items-center justify-center mb-6">
-          <Users className="text-accent" size={24} />
+      <GlassCard className="max-w-sm w-full p-8 flex flex-col items-start">
+        <div className="w-12 h-12 rounded-full bg-white/[0.06] border border-white/[0.10] flex items-center justify-center mb-4">
+          <Users className="text-white" size={20} />
         </div>
 
-        <h1 className="font-display text-2xl font-bold tracking-tight text-white mb-2 text-center">
+        <h1 className="font-display text-xl font-bold tracking-tight text-white mb-1 text-left">
           Split smarter, settle faster.
         </h1>
-        <p className="text-white/50 text-sm mb-8 text-center">
+        <p className="text-white/50 text-sm mb-5 text-left">
           No account needed to get started.
         </p>
 
@@ -61,7 +57,7 @@ export default function Landing() {
             Create account
           </GlassButton>
           
-          <div className="pt-2">
+          <div className="pt-1">
             {!showGuestInput ? (
               <GlassButton onClick={() => setShowGuestInput(true)}>
                 Continue as guest &rarr;
@@ -75,7 +71,7 @@ export default function Landing() {
                   onChange={(e) => setDisplayName(e.target.value)}
                   disabled={loading}
                 />
-                {error && <p className="text-danger text-xs text-center">{error}</p>}
+                {error && <p className="text-danger text-xs text-left">{error}</p>}
                 <GlassButton type="submit" disabled={loading || !displayName.trim()}>
                   {loading ? 'Joining...' : 'Confirm'}
                 </GlassButton>

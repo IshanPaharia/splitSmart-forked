@@ -5,7 +5,7 @@ export default function LoadingSpinner({ size = 'md', className }) {
   return (
     <div className={cn(
       s,
-      'rounded-full border-2 border-white/20 border-t-accent animate-spin',
+      'rounded-full border-2 border-white/20 border-t-white animate-spin',
       className
     )} />
   )
