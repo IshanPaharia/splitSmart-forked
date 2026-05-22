@@ -149,14 +149,21 @@ export const guestLogin = asyncHandler(async (req, res) => {
     }
 
     if (!user || !user.isGuest) {
-        // generate unique username for guest like guest_a3fd4gh to avoid collsions with real usernames
+        // generate unique username for guest like John_a3fd4gh to avoid collsions with real usernames
         const uniqueSuffix = crypto.randomBytes(4).toString("hex")
-        const username = `guest_${uniqueSuffix}`
+        const safeName = displayName ? displayName.trim().replace(/[^a-zA-Z0-9]/g, '') || 'Guest' : 'Guest'
+        const username = `${safeName}_${uniqueSuffix}`
 
         user = await User.create({
             username,
             isGuest: true,
         })
+    } else if (displayName) {
+        // Update existing guest's name so they don't remain "guest" forever
+        const uniqueSuffix = crypto.randomBytes(4).toString("hex")
+        const safeName = displayName.trim().replace(/[^a-zA-Z0-9]/g, '') || 'Guest'
+        user.username = `${safeName}_${uniqueSuffix}`
+        await user.save()
     }
 
     const accessToken = generateAccessToken(user._id)

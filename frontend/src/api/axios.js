@@ -5,6 +5,18 @@ const api = axios.create({
   withCredentials: true,
 })
 
+// Attach token to outgoing requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('splitsmart_token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
 // Silent token refresh on 401
 api.interceptors.response.use(
   (res) => res,
@@ -13,13 +25,21 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !original._retry) {
       original._retry = true
       try {
-        await axios.post(
+        const res = await axios.post(
           `${import.meta.env.VITE_API_URL}/api/auth/refresh`,
           {},
           { withCredentials: true }
         )
+        
+        const newToken = res.data.accessToken
+        localStorage.setItem('splitsmart_token', newToken)
+        
+        // Update the original request with the new token
+        original.headers.Authorization = `Bearer ${newToken}`
+        
         return api(original)
       } catch {
+        localStorage.removeItem('splitsmart_token')
         const publicPaths = ['/login', '/register', '/'];
         if (!publicPaths.includes(window.location.pathname)) {
           window.location.href = '/login'

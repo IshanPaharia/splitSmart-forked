@@ -112,9 +112,9 @@ export const getGroupExpenses = asyncHandler(async (req, res) => {
     }
 
     const expenses = await Expense.find({group: groupId})
-        .populate("paidBy", "username avatar")
-        .populate("splits.user", "username avatar")
-        .populate("createdBy", "username avatar")
+        .populate("paidBy", "username avatar isGuest")
+        .populate("splits.user", "username avatar isGuest")
+        .populate("createdBy", "username avatar isGuest")
         .sort({createdAt: -1}) // newsest first
     
     if(expenses.length === 0){

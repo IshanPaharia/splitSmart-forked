@@ -6,4 +6,6 @@ export const ROUTES = {
   GROUP: '/groups/:id',
   SETTLEMENT: '/groups/:id/settlement',
   JOIN: '/join/:token',
+  EXPENSE_DETAIL: '/groups/:id/expenses/:expenseId',
+  ADD_EXPENSE: '/groups/:id/add-expense',
 }

@@ -45,7 +45,7 @@ export const getGroups = asyncHandler(async (req, res) => {
 export const getGroupById = asyncHandler(async (req, res) => {
   const group = await Group.findById(req.params.id).populate(
     "members.user",
-    "username email avatar",
+    "username email avatar isGuest",
   );
 
   if (!group) {
