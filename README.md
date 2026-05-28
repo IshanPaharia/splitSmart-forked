@@ -39,7 +39,7 @@ flowchart TD
 - **Concurrency-Safe Item Claiming** — Optimistic Concurrency Control (OCC) with jitter-based retry backoff prevents race conditions when multiple users claim items simultaneously.
 - **Greedy Minimum Cash Flow Solver** — A 3-phase debt simplification engine consolidates redundant peer transfers (e.g. A→B→C becomes A→C directly), minimising the total number of transactions required to settle a group.
 - **Sliding-Window Token Refresh** — Axios interceptors silently obtain fresh access tokens on 401 responses, keeping sessions alive without re-authentication prompts.
-
+- **Compound Database Indexing** — Targeted indexes on Group, Expense, Message, and Settlement models eliminate full collection scans. Benchmarked against 19,800 seeded documents, expense queries dropped from scanning 6,021 docs to 15, and chat history from 12,016 docs to 40, with raw DB execution time falling from ~9ms to 1ms in both cases.
 ---
 
 ## Tech Stack
