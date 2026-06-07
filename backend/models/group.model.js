@@ -52,5 +52,7 @@ const groupSchema = new Schema({
     timestamps: true
 })
 
+groupSchema.index({ "members.user": 1 });
+
 const Group = mongoose.model('Group', groupSchema)
 export default Group

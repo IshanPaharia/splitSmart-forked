@@ -31,6 +31,121 @@ flowchart TD
 
 ---
 
+## Database Schema & Entity Relations
+
+```mermaid
+erDiagram
+    User {
+        ObjectId id PK
+        String username
+        String email
+        String password
+        String avatar
+        Boolean isGuest
+        Date createdAt
+        Date updatedAt
+    }
+
+    Group {
+        ObjectId id PK
+        String name
+        String description
+        String icon
+        Array members
+        String inviteToken
+        Date inviteTokenExpiry
+        ObjectId createdBy FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    Expense {
+        ObjectId id PK
+        ObjectId group FK
+        String description
+        String icon
+        Number totalAmount
+        ObjectId paidBy FK
+        Array splits
+        String approvalStatus
+        String billImageUrl
+        Array items
+        String category
+        ObjectId createdBy FK
+        Date createdAt
+    }
+
+    Settlement {
+        ObjectId id PK
+        ObjectId group FK
+        ObjectId from FK
+        ObjectId to FK
+        Number amount
+        String note
+        Date settledAt
+        ObjectId createdBy FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    Message {
+        ObjectId id PK
+        ObjectId groupId FK
+        ObjectId sender FK
+        String text
+        String imageUrl
+        ObjectId expenseId FK
+        Date createdAt
+    }
+
+    User ||--o{ Group : "creates (createdBy)"
+    User ||--o{ GroupMember : "belongs as (members.user)"
+    Group ||--|{ GroupMember : "contains"
+    
+    GroupMember {
+        ObjectId user FK
+        String role
+        Date joinedAt
+    }
+
+    Group ||--o{ Expense : "contains"
+    User ||--o{ Expense : "pays (paidBy)"
+    User ||--o{ Expense : "creates (createdBy)"
+    Expense ||--o{ ExpenseSplit : "divides into"
+    
+    ExpenseSplit {
+        ObjectId user FK
+        Number amount
+        Boolean settled
+    }
+    User ||--o{ ExpenseSplit : "owes (splits.user)"
+    
+    Expense ||--o{ ExpenseItem : "includes"
+    ExpenseItem {
+        String name
+        Number price
+        Number quantity
+        Array claims
+    }
+    ExpenseItem ||--o{ ItemClaim : "claimed by"
+    ItemClaim {
+        ObjectId user FK
+        Number quantity
+    }
+    User ||--o{ ItemClaim : "claims (claims.user)"
+
+    Group ||--o{ Settlement : "records in"
+    User ||--o{ Settlement : "pays (from)"
+    User ||--o{ Settlement : "receives (to)"
+    User ||--o{ Settlement : "creates (createdBy)"
+
+    Group ||--o{ Message : "sent in (groupId)"
+    User ||--o{ Message : "sends (sender)"
+    Expense ||--o{ Message : "linked to claim card (expenseId)"
+```
+
+---
+
 ## Key Features
 
 - **Frictionless Guest Onboarding** — Group members join instantly via invite link with only a display name; no account required. Guests can upgrade to a full account at any time without losing their history.

@@ -1,0 +1,107 @@
+# Implementation Plan — Database Query Optimization via Indexing
+
+This plan outlines the strategy to optimize SplitSmart's database performance by defining targeted database indexes in Mongoose models. To prove the efficacy of these indexes in numbers, we will write a specialized local benchmark script that seeds mock data, measures query execution latency (before vs. after indexing) using MongoDB's `executionStats`, and outputs concrete performance numbers.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Production Context & Resource Tradeoffs:**
+> Indexing significantly improves query speed (read operations) but introduces a slight write overhead (inserts, updates, deletes) because MongoDB must rebuild index trees. For a group expense splitter where reads (dashboard loading, viewing expenses, loading chat history) vastly outnumber writes, this is an excellent trade-off.
+
+> [!NOTE]
+> **Automatic vs Manual Indexes:**
+> Unique constraints defined on Mongoose schemas (such as `username` on `User`, `email` on `User`, and `inviteToken` on `Group`) already generate unique database indexes automatically in MongoDB. This plan focuses strictly on unindexed foreign keys and sorting queries.
+
+---
+
+## Proposed Changes
+
+We will optimize queries across four main Mongoose models.
+
+### 1. Group Model Optimization
+*   **The Bottleneck:** When loading the dashboard, `getGroups` queries all groups where the current user is a member:
+    ```js
+    Group.find({ "members.user": req.user._id })
+    ```
+    Without an index, this triggers a **Collection Scan (COLLSCAN)**, searching every group in the database sequentially.
+*   **Proposed Solution:** Add a multi-key index on `members.user`.
+    #### [MODIFY] [group.model.js](file:///d:/Coding/MERN/splitsmart/backend/models/group.model.js)
+    ```js
+    groupSchema.index({ "members.user": 1 });
+    ```
+
+---
+
+### 2. Expense Model Optimization
+*   **The Bottleneck:** Selecting expenses for a group and calculating settlements queries the database by group and approval status, sorted by creation date:
+    ```js
+    Expense.find({ group: groupId }).sort({ createdAt: -1 })
+    Expense.find({ group: groupId, approvalStatus: "approved" })
+    ```
+    Currently, this triggers a collection scan and performs an expensive in-memory sort when loading expense histories.
+*   **Proposed Solution:** Create a compound index covering the group, approval status, and creation date.
+    #### [MODIFY] [expense.model.js](file:///d:/Coding/MERN/splitsmart/backend/models/expense.model.js)
+    ```js
+    expenseSchema.index({ group: 1, approvalStatus: 1, createdAt: -1 });
+    ```
+
+---
+
+### 3. Message Model Optimization
+*   **The Bottleneck:** Loading the group chat history retrieves all group chat messages chronologically:
+    ```js
+    Message.find({ groupId: id }).sort({ createdAt: 1 })
+    ```
+    As chat history grows, unindexed sorting triggers an in-memory sort stage (`SORT` stage in explain plan), which fails if the sorted dataset exceeds MongoDB's 32MB limit.
+*   **Proposed Solution:** Add a compound index on group ID and creation date.
+    #### [MODIFY] [message.model.js](file:///d:/Coding/MERN/splitsmart/backend/models/message.model.js)
+    ```js
+    messageSchema.index({ groupId: 1, createdAt: 1 });
+    ```
+
+---
+
+### 4. Settlement Model Optimization
+*   **The Bottleneck:** Fetching a group's transaction history filters by group and sorts by settlement date:
+    ```js
+    Settlement.find({ group: groupId }).sort({ settledAt: -1 })
+    ```
+    Without an index, this performs a COLLSCAN and in-memory sort.
+*   **Proposed Solution:** Add a compound index on the group and settlement date.
+    #### [MODIFY] [settlement.model.js](file:///d:/Coding/MERN/splitsmart/backend/models/settlement.model.js)
+    ```js
+    settlementSchema.index({ group: 1, settledAt: -1 });
+    ```
+
+---
+
+## 📊 Performance Benchmarking & Verification Plan
+
+To verify the speedups in real numbers, we will build a custom utility script in the scratch directory:
+`backend/scratch/benchmark-indexing.js`
+
+### What the Benchmark Script Will Do:
+1.  **Establish DB Connection:** Connects to your local or Atlas MongoDB database.
+2.  **Generate Realistic Scale Seeding:** Generates mock records to simulate a real-world populated system:
+    *   `100` Users
+    *   `1,000` Groups (with random membership lists)
+    *   `10,000` Expenses (with random splits and item arrays)
+    *   `20,000` Messages (group chat logs)
+3.  **Run "Before" Latency Tests:** Runs typical production queries 100 times sequentially and measures execution times (in milliseconds) without any indexes in place.
+4.  **Inject the Optimized Indexes:** Triggers the Mongoose index creation commands dynamically.
+5.  **Run "After" Latency Tests:** Runs the same queries another 100 times and measures the post-indexing execution latency.
+6.  **Analyze & Print Statistics:** Compiles a side-by-side performance table showing:
+    *   Average query execution latency (before vs. after).
+    *   Speedup ratio (e.g. `45x faster`).
+    *   MongoDB query execution stage changes (from `COLLSCAN` to `IXSCAN`).
+7.  **Clean up:** Safely deletes seed data and drops the created indexes, leaving the database pristine.
+
+---
+
+### 🧪 Automated Verification Commands
+We will run the benchmark script in the terminal and output the results directly:
+```bash
+node backend/scratch/benchmark-indexing.js
+```

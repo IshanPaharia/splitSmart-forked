@@ -75,5 +75,7 @@ const expenseSchema = new Schema(
   { timestamps: true },
 );
 
+expenseSchema.index({ group: 1, approvalStatus: 1, createdAt: -1 });
+
 const Expense = mongoose.model("Expense", expenseSchema);
 export default Expense;

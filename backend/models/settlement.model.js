@@ -38,5 +38,7 @@ const settlementSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+settlementSchema.index({ group: 1, settledAt: -1 });
+
 const Settlement = mongoose.model("Settlement", settlementSchema);
 export default Settlement;
