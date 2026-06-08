@@ -18,6 +18,8 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+let refreshPromise = null;
+
 // Silent token refresh on 401
 api.interceptors.response.use(
   (res) => res,
@@ -25,27 +27,34 @@ api.interceptors.response.use(
     const original = err.config
     if (err.response?.status === 401 && !original._retry) {
       original._retry = true
-      try {
-        const res = await axios.post(
+      
+      // If a refresh is not already in progress, start one
+      if (!refreshPromise) {
+        refreshPromise = axios.post(
           `${import.meta.env.VITE_API_URL}/api/auth/refresh`,
           {},
           { withCredentials: true }
-        )
-        
-        const newToken = res.data.accessToken;
-        setAccessToken(newToken);
-        
-        // Update the original request with the new token
-        original.headers.Authorization = `Bearer ${newToken}`
-        
-        return api(original)
-      } catch {
-        setAccessToken(null);
-        const publicPaths = ['/login', '/register', '/'];
-        if (!publicPaths.includes(window.location.pathname)) {
-          window.location.href = '/login'
-        }
+        ).then(res => {
+          const newToken = res.data.accessToken;
+          setAccessToken(newToken);
+          refreshPromise = null; // Reset promise on success
+          return newToken;
+        }).catch(error => {
+          refreshPromise = null; // Reset promise on failure
+          setAccessToken(null);
+          const publicPaths = ['/login', '/register', '/'];
+          if (!publicPaths.includes(window.location.pathname)) {
+            window.location.href = '/login'
+          }
+          return Promise.reject(error);
+        });
       }
+
+      // Wait for the active refresh to finish, then retry the request
+      return refreshPromise.then(newToken => {
+        original.headers.Authorization = `Bearer ${newToken}`
+        return api(original)
+      });
     }
     return Promise.reject(err)
   }
