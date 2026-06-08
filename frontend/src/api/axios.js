@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getAccessToken, setAccessToken } from './tokenStore.js'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -8,7 +9,7 @@ const api = axios.create({
 // Attach token to outgoing requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('splitsmart_token')
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -31,15 +32,15 @@ api.interceptors.response.use(
           { withCredentials: true }
         )
         
-        const newToken = res.data.accessToken
-        localStorage.setItem('splitsmart_token', newToken)
+        const newToken = res.data.accessToken;
+        setAccessToken(newToken);
         
         // Update the original request with the new token
         original.headers.Authorization = `Bearer ${newToken}`
         
         return api(original)
       } catch {
-        localStorage.removeItem('splitsmart_token')
+        setAccessToken(null);
         const publicPaths = ['/login', '/register', '/'];
         if (!publicPaths.includes(window.location.pathname)) {
           window.location.href = '/login'
